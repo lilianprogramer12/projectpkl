@@ -1,0 +1,70 @@
+<?php
+require '../config/database.php';
+
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$kostum = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM kostum WHERE id = $id"));
+
+if (!$kostum) {
+    header("Location: katalog.php");
+    exit;
+}
+
+// Ambil riwayat jadwal sewa kostum ini dari pesanan aktif
+$jadwal = mysqli_query($conn, "
+    SELECT p.tanggal_pengambilan, p.tanggal_pemakaian, p.status_pesanan 
+    FROM detail_pesanan dp 
+    JOIN pesanan p ON dp.pesanan_id = p.id 
+    WHERE dp.kostum_id = $id 
+    ORDER BY p.tanggal_pemakaian DESC
+");
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informasi <?= htmlspecialchars($kostum['nama_kostum']) ?></title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-container" style="max-width: 550px;">
+    <div style="text-align: center; margin-bottom: 18px;">
+        <span class="pill-header">informasi kostum</span>
+    </div>
+
+    <div class="card-panel" style="text-align: center;">
+        <h2 style="margin-bottom: 12px;"><?= htmlspecialchars($kostum['nama_kostum']) ?></h2>
+        <img src="../assets/uploads/<?= htmlspecialchars($kostum['gambar']) ?>" 
+             onerror="this.src='../assets/img/bg-maskot.jpg'"
+             style="width: 100%; max-height: 340px; object-fit: cover; border-radius: 18px; margin-bottom: 14px;">
+        
+        <h3 style="color: var(--teal-dark); margin-bottom: 8px;"><?= formatRupiah($kostum['harga']) ?></h3>
+        <p style="font-size: 0.9rem; color: #475569; margin-bottom: 18px;">
+            <?= htmlspecialchars($kostum['deskripsi']) ?>
+        </p>
+
+        <h4 style="text-align:left; margin-bottom: 10px;">Jadwal & Status Sewa:</h4>
+        <div style="background:#F8FAFC; padding:12px; border-radius:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.85rem; font-weight:600;">Status Saat Ini</span>
+            <span class="status-badge" style="position:static;"><?= $kostum['status'] ?></span>
+        </div>
+
+        <?php while ($j = mysqli_fetch_assoc($jadwal)): ?>
+        <div style="background:#F8FAFC; padding:12px; border-radius:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:0.82rem;">
+            <div>
+                <strong>Tanggal Sewa:</strong><br>
+                <?= date('d M Y', strtotime($j['tanggal_pengambilan'])) ?> - <?= date('d M Y', strtotime($j['tanggal_pemakaian'])) ?>
+            </div>
+            <span style="background:#FEF3C7; color:#92400E; padding:4px 10px; border-radius:8px; font-weight:700;">
+                <?= $j['status_pesanan'] ?>
+            </span>
+        </div>
+        <?php endwhile; ?>
+
+        <a href="katalog.php" class="btn-primary" style="display:inline-block; text-decoration:none; margin-top: 16px;">
+            Kembali
+        </a>
+    </div>
+</div>
+</body>
+</html>
